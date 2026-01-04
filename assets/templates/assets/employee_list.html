@@ -1,0 +1,106 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">My Team</h4>
+                <span class="badge bg-secondary">{{ employees.count }} members</span>
+            </div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Contact Info</th>
+                            <th>Assets</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in employees %}
+                        <tr>
+                            <td class="fw-bold">{{ emp.name }}</td>
+                            <td class="small text-muted">
+                                {% if emp.email %}{{ emp.email }}<br>{% endif %}
+                                {% if emp.phone %}{{ emp.phone }}{% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary rounded-pill">{{ emp.assets.count }}</span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'edit_employee' emp.pk %}" class="btn btn-sm btn-outline-primary me-1" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+
+                                <form action="{% url 'delete_employee' emp.pk %}" method="post" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger" title="Remove Member">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                No employees found. Use the form to add your first team member!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-primary">
+            
+            <div class="card-header {% if editing %}bg-warning text-dark{% else %}bg-primary text-white{% endif %}">
+                <h5 class="mb-0">
+                    {% if editing %}
+                        <i class="bi bi-pencil-square"></i> Edit Member
+                    {% else %}
+                        <i class="bi bi-person-plus-fill"></i> Add Member
+                    {% endif %}
+                </h5>
+            </div>
+            
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        {{ form.name }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email (Optional)</label>
+                        {{ form.email }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Phone (Optional)</label>
+                        {{ form.phone }}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-primary{% endif %}">
+                            {% if editing %}Update Employee{% else %}Save Employee{% endif %}
+                        </button>
+                        
+                        {% if editing %}
+                            <a href="{% url 'employee_list' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

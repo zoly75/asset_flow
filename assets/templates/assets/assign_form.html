@@ -1,0 +1,23 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Check Out: {{ asset.name }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% include 'includes/form_loop.html' %}
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'dashboard' %}" class="btn btn-light">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Confirm Assignment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

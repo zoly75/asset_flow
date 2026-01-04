@@ -1,0 +1,16 @@
+# Django specific
+*.log
+*.pot
+*.pyc
+__pycache__/
+db.sqlite3
+media/
+
+# Virtual Environment (very important not to commit this!)
+venv/
+env/
+.env
+
+# OS generated files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,28 @@
+{% extends 'assets/base.html' %}
+
+{% load static %}  
+{% block content %}
+    <div class="row justify-content-center">
+    <div class="col-md-6">
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">Add New Asset</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% include 'includes/form_loop.html' %}
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Save Asset</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script src="{% static 'assets/js/form_logic.js' %}"></script>
+
+{% endblock %}

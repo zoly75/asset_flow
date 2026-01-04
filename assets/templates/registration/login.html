@@ -1,0 +1,29 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+                <h4 class="mb-0">Asset Manager Login</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% include 'includes/form_loop.html' %}
+
+                    <div class="mb-3 text-end">
+                        <a href="{% url 'password_reset' %}" class="text-decoration-none small">Forgot password?</a>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center text-muted small">
+                Don't have an account? <a href="{% url 'signup' %}">Sign up here</a>.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
