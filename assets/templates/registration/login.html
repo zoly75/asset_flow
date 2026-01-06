@@ -1,29 +1,112 @@
-{% extends 'assets/base.html' %}
+{% extends 'assets/base_auth.html' %}
+{% load static %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white text-center">
-                <h4 class="mb-0">Asset Manager Login</h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% include 'includes/form_loop.html' %}
+<div class="container-fluid vh-100">
+    <div class="row h-100">
+        
+        <div class="col-md-8 col-lg-8 d-none d-md-flex flex-column justify-content-center p-5 text-white" 
+             style="background-color: #1F3061;">
+            
+            <div class="ms-4">
+                <div class="mb-5 d-flex align-items-center">
+                    <img src="{% static 'assets/images/assetflow_logo_white.svg' %}" 
+                        alt="AssetFlow Logo" 
+                        height="40" 
+                        class="me-3">
+                    
+                    <span class="text-white fw-bold" style="font-size: 2.5rem; letter-spacing: -1px;">
+                        AssetFlow
+                    </span>
+                </div>
 
-                    <div class="mb-3 text-end">
-                        <a href="{% url 'password_reset' %}" class="text-decoration-none small">Forgot password?</a>
-                    </div>
+                <h1 class="display-4 fw-bold mb-4">Stop managing assets<br>in spreadsheets.</h1>
+                
+                <p class="lead mb-5" style="opacity: 0.9; max-width: 600px;">
+                    AssetFlow is the modern way to track, assign, and audit your company inventory. 
+                    Say goodbye to lost equipment.
+                </p>
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
-                    </div>
-                </form>
-            </div>
-            <div class="card-footer text-center text-muted small">
-                Don't have an account? <a href="{% url 'signup' %}">Sign up here</a>.
+                <ul class="list-unstyled fs-5">
+                    <li class="mb-3 d-flex align-items-center">
+                        <i class="bi bi-qr-code-scan me-3 text-info"></i> 
+                        Instant QR Code Generation
+                    </li>
+                    
+                    <li class="mb-3 d-flex align-items-center">
+                        <i class="bi bi-check-circle me-3 text-info"></i> 
+                        Real-time Status Tracking
+                    </li>
+                    
+                    <li class="mb-3 d-flex align-items-center">
+                        <i class="bi bi-printer me-3 text-info"></i> 
+                        One-click Label Printing
+                    </li>
+                </ul>
+
+                <div class="mt-auto pt-5 small text-white-50">
+                    Powered by <strong>zolylabs</strong>
+                </div>
             </div>
         </div>
+
+        <div class="col-md-4 col-lg-4 d-flex align-items-center justify-content-center bg-white">
+            <div class="w-75">
+                
+                <div class="d-md-none mb-4 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center">
+                        <img src="{% static 'assets/images/assetflow_logo_blue.svg' %}" 
+                            height="32" 
+                            class="me-2">
+                        <span class="text-dark fw-bold h3 mb-0" style="letter-spacing: -0.5px;">
+                            AssetFlow
+                        </span>
+                    </div>
+                </div>
+
+                <h2 class="fw-bold mb-4 text-dark">Sign In</h2>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        {{ form.username }} 
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Password</label>
+                        {{ form.password }}
+                    </div>
+
+                    <div class="mb-3 text-end">
+                        <a href="{% url 'password_reset' %}" class="text-decoration-none small text-muted">
+                            Forgot password?
+                        </a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 mt-2 fw-bold" 
+                            style="background-color: #1F3061; border-color: #1F3061;">
+                        Login to Dashboard
+                    </button>
+                </form>
+
+                <p class="mt-4 text-center text-muted small">
+                    Don't have an account? 
+                    <a href="{% url 'signup' %}" class="text-decoration-none fw-bold" style="color: #1F3061;">
+                        Sign up here
+                    </a>
+                </p>
+            </div>
+        </div>
+        
     </div>
 </div>
+
+<script>
+    var inputs = document.querySelectorAll('input');
+    inputs.forEach(function(input) {
+        input.classList.add('form-control');
+    });
+</script>
 {% endblock %}
