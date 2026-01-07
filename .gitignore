@@ -1,16 +1,15 @@
-# Django specific
-*.log
-*.pot
+# Django alapok
 *.pyc
 __pycache__/
 db.sqlite3
-media/
+/staticfiles
+/media
 
-# Virtual Environment (very important not to commit this!)
-venv/
-env/
+# Környezet és beállítások
 .env
+venv/
+.venv/
 
-# OS generated files
-.DS_Store
-Thumbs.db
+# Deployment szemetek
+assetflow.zip
+requirements.txt.bak

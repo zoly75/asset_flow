@@ -96,6 +96,23 @@ class Asset(models.Model):
     def __str__(self):
         return f"{self.name} ({self.status})"
 
+class AssetHistory(models.Model):
+    """
+    Log of changes for an Asset.
+    Records who changed what, when, and the details of the change.
+    """
+    asset = models.ForeignKey(Asset, on_delete=models.CASCADE, related_name='history')
+    date = models.DateTimeField(auto_now_add=True)
+    
+    # Who made the change? (Can be null if triggered by system logic)
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Textual description of the change (e.g. "Status: Available -> In Use")
+    action = models.CharField(max_length=255)
+    
+    def __str__(self):
+        return f"{self.date.strftime('%Y-%m-%d %H:%M')} - {self.action}"
+
 class UserProfile(models.Model):
     """
     Extension of the User model to store company details.

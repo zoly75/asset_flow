@@ -10,32 +10,45 @@
             <p class="text-muted small mb-0">Manage your company inventory</p>
         </div>
 
-        <div class="card border-0 bg-light shadow-sm" style="min-width: 320px;">
+        <div class="card border-0 bg-light shadow-sm" style="min-width: 300px;">
             <div class="card-body py-2 px-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge {% if user.userprofile.is_premium %}bg-primary{% else %}bg-secondary{% endif %}">
-                        {{ user.userprofile.is_premium|yesno:"PRO PLAN,FREE STARTER" }}
-                    </span>
-                    
-                    <small class="text-muted fw-bold">
-                        {{ asset_count }} / {{ user.userprofile.max_assets }} used
-                    </small>
-                </div>
-
-                <div class="progress" style="height: 6px;">
-                    <div class="progress-bar {% if asset_count >= user.userprofile.max_assets %}bg-danger{% else %}bg-success{% endif %}" 
-                         role="progressbar" 
-                         style="width: {% widthratio asset_count user.userprofile.max_assets 100 %}%;">
+                
+                {% if request.user.userprofile.is_premium %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-warning text-dark fw-bold mb-1">
+                                <i class="bi bi-star-fill me-1"></i>PRO ENTERPRISE
+                            </span>
+                            <div class="small text-muted">
+                                Managing <strong>{{ asset_count }}</strong> assets
+                            </div>
+                        </div>
+                        <div class="text-end text-muted">
+                            <i class="bi bi-infinity fs-3" title="Unlimited Storage"></i>
+                        </div>
                     </div>
-                </div>
 
-                {% if not user.userprofile.is_premium %}
-                    <div class="text-end mt-1">
-                        <a href="{% url 'pricing' %}" class="text-decoration-none small fw-bold text-warning" style="font-size: 0.75rem;">
+                {% else %}
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge bg-secondary">FREE STARTER</span>
+                        <span class="text-muted small fw-bold">{{ asset_count }} / 50 used</span>
+                    </div>
+                    
+                    <div class="progress mb-2" style="height: 6px;">
+                        <div class="progress-bar {% if asset_count >= 50 %}bg-danger{% else %}bg-success{% endif %}" 
+                             role="progressbar" 
+                             style="width: {% widthratio asset_count 50 100 %}%;" 
+                             aria-valuenow="{{ asset_count }}" aria-valuemin="0" aria-valuemax="50">
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <a href="{% url 'pricing' %}" class="text-decoration-none small fw-bold text-warning">
                             <i class="bi bi-lightning-fill"></i> Upgrade to unlock unlimited
                         </a>
                     </div>
                 {% endif %}
+
             </div>
         </div>
     </div>
@@ -59,7 +72,7 @@
         </form>
 
         <div class="d-flex gap-2 w-100 w-md-auto">
-            <button type="submit" form="bulk-print-form" class="btn btn-outline-dark text-nowrap flex-fill flex-md-grow-0">
+            <button type="submit" form="bulk-print-form" class="btn btn-outline-dark text-nowrap flex-fill flex-md-grow-0" id="labelsBtn">
                 <i class="bi bi-printer"></i> Labels
             </button>
             
@@ -79,8 +92,8 @@
             <table class="table table-hover table-striped mb-0 align-middle">
                 <thead class="table-dark">
                     <tr>
-                        <th style="width: 40px;" class="text-center">
-                            <i class="bi bi-check2"></i>
+                        <th class="ps-4 py-3" style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" id="selectAll">
                         </th>
                         <th>Asset Name</th>
                         <th>Serial No.</th>
@@ -92,11 +105,21 @@
                 <tbody>
                     {% for asset in assets %}
                     <tr>
-                        <td class="text-center">
-                            <input type="checkbox" name="asset_ids" value="{{ asset.uuid }}" class="form-check-input asset-checkbox cursor-pointer">
+                        <td class="ps-4 py-3" style="width: 40px;">
+                            <div class="form-check">
+                                <input class="form-check-input asset-checkbox" type="checkbox" name="asset_ids" value="{{ asset.uuid }}">
+                            </div>
                         </td>
-                        <td class="fw-bold text-primary">
-                            {{ asset.name }}
+                        <td class="fw-bold">
+                            <a href="{% url 'edit_asset' asset.uuid %}" class="text-decoration-none text-primary">
+                                {{ asset.name }}
+                            </a>
+                            
+                            {% if asset.description %}
+                                <div class="small text-muted fw-normal text-truncate" style="max-width: 200px;">
+                                    {{ asset.description }}
+                                </div>
+                            {% endif %}
                         </td>
                         <td class="text-muted font-monospace small">
                             {{ asset.serial_number|default:"-" }}
@@ -166,5 +189,53 @@
         </div>
     </div>
 </form>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // 1. SELECT ALL FUNCTIONALITY
+        const masterCheckbox = document.getElementById('selectAll');
+        const rowCheckboxes = document.querySelectorAll('.asset-checkbox'); // Ensure your row checkboxes have this class!
+
+        if (masterCheckbox) {
+            masterCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+                rowCheckboxes.forEach(function(checkbox) {
+                    checkbox.checked = isChecked;
+                });
+                updateBulkActionUI();
+            });
+        }
+
+        // 2. INDIVIDUAL CHECKBOX MONITORING
+        // If user manually unchecks one item, the master checkbox should uncheck too.
+        rowCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                // If all are checked, check master. If not, uncheck master.
+                const allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
+                masterCheckbox.checked = allChecked;
+                
+                updateBulkActionUI();
+            });
+        });
+
+        // 3. UI FEEDBACK (Optional)
+        // Shows how many items are selected
+        function updateBulkActionUI() {
+            const selectedCount = document.querySelectorAll('.asset-checkbox:checked').length;
+            const labelsBtn = document.getElementById('labelsBtn'); // Add ID to your Labels button
+            
+            // Example: Change button text based on selection
+            if (labelsBtn) {
+                if (selectedCount > 0) {
+                    labelsBtn.innerHTML = `<i class="bi bi-qr-code"></i> Labels (${selectedCount})`;
+                } else {
+                    labelsBtn.innerHTML = `<i class="bi bi-qr-code"></i> Labels (All)`;
+                }
+            }
+        }
+        updateBulkActionUI();
+    });
+</script>
 
 {% endblock %}

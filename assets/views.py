@@ -246,6 +246,15 @@ def generate_qr(request, uuid):
 @login_required
 def edit_asset(request, uuid):
     asset = get_object_or_404(Asset, uuid=uuid, owner=request.user)
+
+    is_premium = False
+    if hasattr(request.user, 'userprofile'):
+        is_premium = request.user.userprofile.is_premium
+
+    if is_premium:
+        history = asset.history.all().order_by('-date')
+    else:
+        history = None
     
     if request.method == 'POST':
         # PASS USER HERE:
@@ -256,8 +265,15 @@ def edit_asset(request, uuid):
     else:
         # PASS USER HERE TOO:
         form = AssetForm(instance=asset, user=request.user)
-        
-    return render(request, 'assets/asset_form.html', {'form': form})
+
+    context = {
+        'form': form, 
+        'asset': asset,   # We need this to check if we are in 'Edit' mode
+        'history': history, # The list of changes
+        'is_premium': is_premium
+    }
+
+    return render(request, 'assets/asset_form.html', context)
 
 @login_required
 def delete_asset(request, uuid):
@@ -393,14 +409,24 @@ def download_labels_pdf(request):
     # Check for SELECTED items (POST list)
     selected_ids = request.POST.getlist('asset_ids')
 
+    is_premium = False
+    if hasattr(request.user, 'userprofile'):
+        is_premium = request.user.userprofile.is_premium
+
     if single_uuid:
         # Mode A: Single Asset
         assets = Asset.objects.filter(owner=request.user, uuid=single_uuid)
     elif selected_ids:
         # Mode B: Bulk Selection
+        if not is_premium and len(selected_ids) > 1:
+            return render(request, 'assets/premium_lock.html')
+
         assets = Asset.objects.filter(owner=request.user, uuid__in=selected_ids).order_by('name')
     else:
         # Mode C: Print ALL (Default fallback)
+        if not is_premium:
+            return render(request, 'assets/premium_lock.html')
+
         assets = Asset.objects.filter(owner=request.user).order_by('name')
 
     if not assets.exists():

@@ -1,28 +1,108 @@
 {% extends 'assets/base.html' %}
+{% load static %}
 
-{% load static %}  
 {% block content %}
-    <div class="row justify-content-center">
-    <div class="col-md-6">
+<div class="row {% if not asset %}justify-content-center{% endif %}">
+    
+    <div class="{% if asset %}col-lg-5 mb-4{% else %}col-md-6{% endif %}">
         
         <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h4 class="mb-0">Add New Asset</h4>
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h4 class="mb-0 fw-bold text-dark">
+                    {% if asset %}
+                        <i class="bi bi-pencil-square text-primary me-2"></i>Edit Asset
+                    {% else %}
+                        <i class="bi bi-plus-circle text-primary me-2"></i>Add New Asset
+                    {% endif %}
+                </h4>
+                {% if asset %}
+                    <span class="badge bg-light text-dark border">{{ asset.uuid|stringformat:"s"|slice:":8" }}</span>
+                {% endif %}
             </div>
-            <div class="card-body">
+            
+            <div class="card-body p-4">
                 <form method="post">
                     {% include 'includes/form_loop.html' %}
                     
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Save Asset</button>
-                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary fw-bold py-2">
+                            {% if asset %}Save Changes{% else %}Create Asset{% endif %}
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary border-0">Cancel</a>
                     </div>
                 </form>
             </div>
         </div>
-
     </div>
+
+    {% if asset %}
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 bg-transparent">
+                <div class="card-header bg-transparent border-0 ps-0">
+                    <h5 class="fw-bold text-muted mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Activity History
+                    </h5>
+                </div>
+                
+                <div class="card-body ps-0 position-relative">
+                    
+                    {% if is_premium %}
+                        {% if history %}
+                            <div class="list-group list-group-flush rounded shadow-sm">
+                                {% for event in history %}
+                                <div class="list-group-item p-3 border-start border-4 {% if forloop.first %}border-primary{% else %}border-light{% endif %}">
+                                    <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                        <small class="text-muted fw-bold">
+                                            <i class="bi bi-calendar-event me-1"></i>{{ event.date|date:"Y-m-d H:i" }}
+                                        </small>
+                                        <small class="badge bg-light text-secondary border">
+                                            <i class="bi bi-person-fill me-1"></i>
+                                            {% if event.changed_by %}{{ event.changed_by.username }}{% else %}System{% endif %}
+                                        </small>
+                                    </div>
+                                    <p class="mb-0 text-dark small">{{ event.action }}</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-light border text-center text-muted">
+                                No history recorded yet.
+                            </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="filter-blur" style="filter: blur(4px); opacity: 0.5; user-select: none;">
+                            <div class="list-group list-group-flush rounded">
+                                <div class="list-group-item p-3 border-start border-4 border-light">
+                                    <small class="text-muted">2026-01-07 14:30</small><br>Status: Available -> In Use
+                                </div>
+                                <div class="list-group-item p-3 border-start border-4 border-light">
+                                    <small class="text-muted">2026-01-05 09:15</small><br>Assigned to: Storage -> Kiss Zoltán
+                                </div>
+                                <div class="list-group-item p-3 border-start border-4 border-light">
+                                    <small class="text-muted">2026-01-02 11:00</small><br>Asset Created
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="position-absolute top-50 start-50 translate-middle text-center w-100 px-4">
+                            <div class="bg-white p-4 rounded shadow border">
+                                <i class="bi bi-lock-fill text-warning display-4 mb-3"></i>
+                                <h5 class="fw-bold">Pro Feature</h5>
+                                <p class="text-muted small mb-3">Upgrade to Pro Enterprise to track full asset history and employee assignments.</p>
+                                <a href="{% url 'pricing' %}" class="btn btn-warning fw-bold text-dark w-100">
+                                    View Pricing
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    {% endif %}
 </div>
+
 <script src="{% static 'assets/js/form_logic.js' %}"></script>
 
 {% endblock %}

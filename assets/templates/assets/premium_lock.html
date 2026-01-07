@@ -1,0 +1,31 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center" style="height: 80vh;">
+    <div class="text-center p-5 shadow rounded bg-white" style="max-width: 500px;">
+        <div class="mb-4">
+            <span class="display-1 text-warning">
+                <i class="bi bi-lock-fill"></i>
+            </span>
+        </div>
+        
+        <h2 class="fw-bold text-dark mb-3">Pro Feature Locked</h2>
+        
+        <p class="text-muted mb-4 lead">
+            Bulk printing and "Print All" are available exclusively for <strong>Pro Enterprise</strong> users.
+            <br>
+            <span class="small">Free Plan allows printing labels one by one.</span>
+        </p>
+
+        <div class="d-grid gap-3">
+            <a href="{% url 'pricing' %}" class="btn btn-primary fw-bold btn-lg">
+                View Upgrade Options
+            </a>
+            
+            <button onclick="window.close()" class="btn btn-outline-secondary">
+                Close Window
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
