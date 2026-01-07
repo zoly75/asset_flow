@@ -1,0 +1,47 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> Confirm Deletion
+                </div>
+                <div class="card-body text-center p-4">
+                    <h4 class="mb-3">Are you sure you want to remove this employee?</h4>
+                    
+                    <div class="alert alert-light border">
+                        <h2 class="fw-bold text-dark">{{ employee.name }}</h2>
+                        {% if employee.email %}<p class="mb-0 text-muted">{{ employee.email }}</p>{% endif %}
+                    </div>
+
+                    {% if assigned_assets_count > 0 %}
+                        <div class="alert alert-warning d-flex align-items-center" role="alert">
+                            <i class="bi bi-info-circle-fill me-3 fs-4"></i>
+                            <div class="text-start">
+                                <strong>Warning:</strong> This employee currently has <strong>{{ assigned_assets_count }} assets</strong> assigned.
+                                <br>
+                                <span class="small">If you delete them, these assets will be returned to <strong>Storage</strong> (unassigned).</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <p class="text-muted">This action cannot be undone.</p>
+
+                    <div class="d-flex justify-content-center gap-3 mt-4">
+                        <a href="{% url 'employee_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger px-4 fw-bold">
+                                Yes, Delete Employee
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

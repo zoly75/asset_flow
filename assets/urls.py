@@ -25,4 +25,5 @@ urlpatterns = [
     path('team/delete/<int:pk>/', views.delete_employee, name='delete_employee'),
     path('team/edit/<int:pk>/', views.edit_employee, name='edit_employee'),
     path('signup/', SignUpView.as_view(), name='signup'),
+    path('pricing/', views.pricing, name='pricing'),
 ]

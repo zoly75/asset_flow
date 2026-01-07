@@ -1,42 +1,82 @@
 {% extends 'assets/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-    <h2>Asset Dashboard</h2>
+<div class="mb-4 mt-3">
     
-    <form method="get" action="{% url 'dashboard' %}" class="d-flex w-50">
-        <div class="input-group">
-            <input type="text" name="q" class="form-control" placeholder="Search name, serial, employee..." value="{{ search_query|default:'' }}">
-            
-            <button class="btn btn-outline-primary" type="submit">
-                <i class="bi bi-search"></i>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-3 gap-3">
+        
+        <div>
+            <h2 class="fw-bold text-dark mb-0">Asset Dashboard</h2>
+            <p class="text-muted small mb-0">Manage your company inventory</p>
+        </div>
+
+        <div class="card border-0 bg-light shadow-sm" style="min-width: 320px;">
+            <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge {% if user.userprofile.is_premium %}bg-primary{% else %}bg-secondary{% endif %}">
+                        {{ user.userprofile.is_premium|yesno:"PRO PLAN,FREE STARTER" }}
+                    </span>
+                    
+                    <small class="text-muted fw-bold">
+                        {{ asset_count }} / {{ user.userprofile.max_assets }} used
+                    </small>
+                </div>
+
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar {% if asset_count >= user.userprofile.max_assets %}bg-danger{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {% widthratio asset_count user.userprofile.max_assets 100 %}%;">
+                    </div>
+                </div>
+
+                {% if not user.userprofile.is_premium %}
+                    <div class="text-end mt-1">
+                        <a href="{% url 'pricing' %}" class="text-decoration-none small fw-bold text-warning" style="font-size: 0.75rem;">
+                            <i class="bi bi-lightning-fill"></i> Upgrade to unlock unlimited
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex flex-column flex-md-row justify-content-end align-items-center gap-2">
+        
+        <form method="get" action="{% url 'dashboard' %}" class="d-flex w-100 w-md-auto" style="min-width: 300px;">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="Search name, serial..." value="{{ search_query|default:'' }}">
+                
+                {% if search_query %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary" title="Clear Search">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+                
+                <button class="btn btn-outline-primary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </form>
+
+        <div class="d-flex gap-2 w-100 w-md-auto">
+            <button type="submit" form="bulk-print-form" class="btn btn-outline-dark text-nowrap flex-fill flex-md-grow-0">
+                <i class="bi bi-printer"></i> Labels
             </button>
             
-            {% if search_query %}
-                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary" title="Clear Search">
-                    <i class="bi bi-x-lg"></i>
-                </a>
-            {% endif %}
+            <a href="{% url 'add_asset' %}" class="btn btn-primary text-nowrap flex-fill flex-md-grow-0">
+                <i class="bi bi-plus-lg"></i> Add New
+            </a>
         </div>
-    </form>
+    </div>
+
 </div>
 
 <form method="post" action="{% url 'download_labels' %}" id="bulk-print-form" target="_blank">
     {% csrf_token %}
 
-    <div class="d-flex justify-content-end mb-3">
-        <button type="submit" class="btn btn-outline-dark me-2">
-            <i class="bi bi-printer"></i> Print Labels (PDF)
-        </button>
-        
-        <a href="{% url 'add_asset' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> Add New Asset
-        </a>
-    </div>
-
-    <div class="card">
+    <div class="card shadow-sm border-0">
         <div class="card-body p-0 table-responsive">
-            <table class="table table-hover table-striped mb-0">
+            <table class="table table-hover table-striped mb-0 align-middle">
                 <thead class="table-dark">
                     <tr>
                         <th style="width: 40px;" class="text-center">
@@ -52,16 +92,19 @@
                 <tbody>
                     {% for asset in assets %}
                     <tr>
-                        <td>
-                            <input type="checkbox" name="asset_ids" value="{{ asset.uuid }}" class="form-check-input asset-checkbox">
+                        <td class="text-center">
+                            <input type="checkbox" name="asset_ids" value="{{ asset.uuid }}" class="form-check-input asset-checkbox cursor-pointer">
                         </td>
-                        <td class="fw-bold">{{ asset.name }}</td>
-                        <td class="text-muted font-monospace small">{{ asset.serial_number|default:"-" }}</td>
+                        <td class="fw-bold text-primary">
+                            {{ asset.name }}
+                        </td>
+                        <td class="text-muted font-monospace small">
+                            {{ asset.serial_number|default:"-" }}
+                        </td>
                         <td>
                             <a href="{% url 'update_status' asset.uuid %}" class="text-decoration-none">
-                                
                                 {% if asset.status == 'AVAILABLE' %}
-                                    <span class="badge bg-success">Available</span>
+                                    <span class="badge bg-success bg-opacity-75">Available</span>
                                 {% elif asset.status == 'ASSIGNED' %}
                                     <span class="badge bg-primary">In Use</span>
                                 {% elif asset.status == 'MAINTENANCE' %}
@@ -71,55 +114,49 @@
                                 {% else %}
                                     <span class="badge bg-danger">Lost</span>
                                 {% endif %}
-                                
-                                <i class="bi bi-pencil-square text-muted ms-1 small"></i>
+                                <i class="bi bi-pencil-square text-muted ms-1 small opacity-50"></i>
                             </a>
                         </td>
                         <td>
                             {% if asset.status == 'AVAILABLE' %}
-                                <a href="{% url 'assign_asset' asset.uuid %}" class="btn btn-sm btn-outline-primary">
+                                <a href="{% url 'assign_asset' asset.uuid %}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.85rem;">
                                     <i class="bi bi-person-plus"></i> Assign
                                 </a>
-                                
                             {% elif asset.status == 'ASSIGNED' %}
                                 <div class="d-flex align-items-center">
-                                    <span class="me-2 fw-bold text-dark">{{ asset.assigned_to }}</span>
-                                    
-                                    <a href="{% url 'return_asset' asset.uuid %}" class="btn btn-sm btn-outline-success" title="Return to Storage">
+                                    <span class="me-2 fw-bold text-dark small">{{ asset.assigned_to }}</span>
+                                    <a href="{% url 'return_asset' asset.uuid %}" class="text-success" title="Return to Storage">
                                         <i class="bi bi-arrow-return-left"></i>
                                     </a>
                                 </div>
-
                             {% else %}
-                                <span class="text-muted fst-italic">{{ asset.assigned_to|default:"-" }}</span>
+                                <span class="text-muted fst-italic small">-</span>
                             {% endif %}
                         </td>
                         <td class="text-end">
-                            <a href="{% url 'download_labels' %}?uuid={{ asset.uuid }}" target="_blank" class="btn btn-sm btn-outline-secondary me-1" title="Print Only This Label">
-                                <i class="bi bi-printer"></i>
-                            </a>
-                            
-                            <a href="{% url 'generate_qr' asset.uuid %}" target="_blank" class="btn btn-sm btn-outline-dark me-1" title="Print QR">
-                                <i class="bi bi-qr-code"></i>
-                            </a>
-
-                            <a href="{% url 'public_asset' asset.uuid %}" target="_blank" class="btn btn-sm btn-info me-1" title="Public View">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            
-                            <a href="{% url 'edit_asset' asset.uuid %}" class="btn btn-sm btn-warning me-1" title="Edit">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-
-                            <a href="{% url 'delete_asset' asset.uuid %}" class="btn btn-sm btn-danger" title="Delete">
-                                <i class="bi bi-trash"></i>
-                            </a>
+                            <div class="btn-group">
+                                <a href="{% url 'download_labels' %}?uuid={{ asset.uuid }}" target="_blank" class="btn btn-sm btn-light border" title="Print Label">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                                <a href="{% url 'generate_qr' asset.uuid %}" target="_blank" class="btn btn-sm btn-light border" title="Print QR">
+                                    <i class="bi bi-qr-code"></i>
+                                </a>
+                                <a href="{% url 'public_asset' asset.uuid %}" target="_blank" class="btn btn-sm btn-light border" title="View Public">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'edit_asset' asset.uuid %}" class="btn btn-sm btn-light border text-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'delete_asset' asset.uuid %}" class="btn btn-sm btn-light border text-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="6" class="text-center py-5 text-muted">
-                            <i class="bi bi-box display-4 d-block mb-3"></i>
+                            <i class="bi bi-box-seam display-1 text-light d-block mb-3"></i>
                             No assets found. Start by adding one!
                         </td>
                     </tr>

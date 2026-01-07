@@ -25,6 +25,8 @@ def dashboard(request):
     # 1. Base Query: Fetch only the user's assets (SAAS Security)
     assets = Asset.objects.filter(owner=request.user)
 
+    asset_count = assets.count()
+
     # 2. Search Logic
     query = request.GET.get('q') # Get the search term from URL (e.g., ?q=drill)
 
@@ -45,6 +47,7 @@ def dashboard(request):
 
     context = {
         'assets': assets,
+        'asset_count': asset_count,
         'search_query': query # Pass back to template to keep the input filled
     }
     return render(request, 'assets/dashboard.html', context)
@@ -92,7 +95,7 @@ class CustomPasswordChangeView(PasswordChangeView):
 def employee_list(request):
     """
     Team Management Page.
-    Displays the list of employees and a form to add a new one.
+    Displays the list of employees with SEARCH functionality.
     """
     # Handle "Add New Employee" form submission
     if request.method == 'POST':
@@ -105,27 +108,83 @@ def employee_list(request):
     else:
         form = EmployeeForm()
 
-    # Fetch existing employees
+    # 1. Base Query: Fetch existing employees owned by the user
     employees = Employee.objects.filter(owner=request.user).order_by('name')
 
-    return render(request, 'assets/employee_list.html', {'employees': employees, 'form': form})
+    # 2. Search Logic (New)
+    query = request.GET.get('q') # Get the search term from URL
+    if query:
+        # Filter by Name OR Email OR Phone
+        # (Make sure 'from django.db.models import Q' is at the top of the file)
+        employees = employees.filter(
+            Q(name__icontains=query) | 
+            Q(email__icontains=query) | 
+            Q(phone__icontains=query)
+        )
+
+    # 3. Calculate Stats
+    total_assigned = Asset.objects.filter(owner=request.user, status='ASSIGNED').count()
+
+    context = {
+        'employees': employees,
+        'form': form,
+        'total_assigned': total_assigned,
+        'search_query': query # Optional: Pass back to keep input filled
+    }
+
+    return render(request, 'assets/employee_list.html', context)
 
 @login_required
 def delete_employee(request, pk):
     """
-    Deletes a team member.
+    Deletes a team member with confirmation page.
+    Releases their assets back to storage (AVAILABLE).
     """
     employee = get_object_or_404(Employee, pk=pk, owner=request.user)
 
     if request.method == 'POST':
+        # 1. Find assets assigned to this employee
+        assigned_assets = Asset.objects.filter(assigned_to=employee)
+        
+        # 2. BULK UPDATE: Set assigned_to to None AND status to AVAILABLE
+        # Using .update() is efficient as it hits the DB once
+        assigned_assets.update(assigned_to=None, status='AVAILABLE')
+
+        # 3. Delete the employee record
+        employee_name = employee.name
         employee.delete()
-        # Note: Assets assigned to this person will have 'assigned_to' set to NULL automatically
+        
+        messages.success(request, f"{employee_name} has been removed. Their assets have been returned to storage.")
         return redirect('employee_list')
 
-    return redirect('employee_list')
+    # Handle GET request: Show confirmation page
+    context = {
+        'employee': employee,
+        'assigned_assets_count': employee.assets.count()
+    }
+    return render(request, 'assets/delete_employee_confirm.html', context)
 
 @login_required
 def add_asset(request):
+    # --- START OF LIMIT CHECK ---
+    # 1. Count current assets owned by the user
+    current_count = Asset.objects.filter(owner=request.user).count()
+    
+    # 2. Get limits from UserProfile (handle cases where profile might be missing)
+    if hasattr(request.user, 'userprofile'):
+        limit = request.user.userprofile.max_assets
+        is_premium = request.user.userprofile.is_premium
+    else:
+        # Fallback defaults if something is wrong with the profile
+        limit = 50 
+        is_premium = False
+
+    # 3. The Gatekeeper: If limit reached AND not premium -> Block access
+    if not is_premium and current_count >= limit:
+        messages.warning(request, f"You have reached the limit of the Free Plan ({limit} assets). Please upgrade to add more.")
+        return redirect('dashboard')
+    # --- END OF LIMIT CHECK ---    
+
     if request.method == 'POST':
         # PASS USER HERE:
         form = AssetForm(request.POST, user=request.user) 
@@ -153,6 +212,7 @@ def public_asset(request, uuid):
     # 2. Render a simplified, mobile-friendly template
     return render(request, 'assets/public_asset.html', {'asset': asset})
 
+@login_required
 def generate_qr(request, uuid):
     """
     Generates a QR code image on the fly.
@@ -472,3 +532,6 @@ class SignUpView(generic.CreateView):
     form_class = SignUpForm
     success_url = reverse_lazy('login')
     template_name = 'registration/signup.html'
+
+def pricing(request):
+    return render(request, 'assets/pricing.html')

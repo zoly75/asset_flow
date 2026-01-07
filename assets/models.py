@@ -105,6 +105,9 @@ class UserProfile(models.Model):
     company_name = models.CharField(max_length=100, blank=True, default="")
     phone_number = models.CharField(max_length=30, blank=True, default="")
 
+    is_premium = models.BooleanField(default=False) 
+    max_assets = models.IntegerField(default=50)
+
     def __str__(self):
         return f"{self.company_name} ({self.user.username})"
 
