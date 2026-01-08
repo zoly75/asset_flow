@@ -32,6 +32,8 @@ def track_asset_changes(sender, instance, **kwargs):
             # If there are any changes, create a history record
             if changes:
                 action_text = ", ".join(changes)
+
+                actual_user = getattr(instance, '_current_user', instance.owner)
                 
                 # Note: signals don't have direct access to 'request.user'.
                 # As a fallback, we use the asset owner, OR we can handle user tracking
@@ -39,7 +41,7 @@ def track_asset_changes(sender, instance, **kwargs):
                 AssetHistory.objects.create(
                     asset=instance,
                     action=action_text,
-                    changed_by=instance.owner 
+                    changed_by=actual_user 
                 )
                 
         except Asset.DoesNotExist:

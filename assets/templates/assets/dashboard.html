@@ -13,7 +13,7 @@
         <div class="card border-0 bg-light shadow-sm" style="min-width: 300px;">
             <div class="card-body py-2 px-3">
                 
-                {% if request.user.userprofile.is_premium %}
+                {% if request.user.userprofile.effective_premium %}
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <span class="badge bg-warning text-dark fw-bold mb-1">

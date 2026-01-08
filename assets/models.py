@@ -125,6 +125,39 @@ class UserProfile(models.Model):
     is_premium = models.BooleanField(default=False) 
     max_assets = models.IntegerField(default=50)
 
+    # --- NEW FIELD: TEAM MANAGEMENT ---
+    # If this is set, the user is NOT an owner/boss, but a subordinate.
+    # They inherit all data (Assets, Employees) from the master_account.
+    master_account = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='team_members'
+    )
+
+    @property
+    def effective_company_name(self):
+        """
+        Returns the Boss's company name if this is a sub-account.
+        Otherwise returns its own company name.
+        This ensures team members see the correct company info.
+        """
+        if self.master_account:
+            # Fallback to the Master Account (Boss)
+            return self.master_account.userprofile.company_name
+        return self.company_name
+
+    @property
+    def effective_premium(self):
+        """
+        Returns the Boss's premium status if this is a sub-account.
+        This allows team members to use premium features paid by the Boss.
+        """
+        if self.master_account:
+            return self.master_account.userprofile.is_premium
+        return self.is_premium
+
     def __str__(self):
         return f"{self.company_name} ({self.user.username})"
 

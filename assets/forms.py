@@ -110,3 +110,17 @@ class SignUpForm(UserCreationForm):
         # Itt határozzuk meg, mi jelenjen meg.
         # A jelszót a UserCreationForm automatikusan hozzáadja.
         fields = ('username', 'email', 'first_name', 'last_name')
+
+class TeamUserCreationForm(UserCreationForm):
+    """
+    Form to create a sub-user (Team Member).
+    Simplified registration: only Username + Password (auto-generated or set).
+    """
+    class Meta:
+        model = User
+        fields = ('username', 'first_name', 'last_name', 'email')
+    
+    def __init__(self, *args, **kwargs):
+        super(TeamUserCreationForm, self).__init__(*args, **kwargs)
+        # Make email optional for team members if they don't want to provide it
+        self.fields['email'].required = False

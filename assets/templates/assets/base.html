@@ -30,8 +30,15 @@
                         <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'employee_list' %}">Team Management</a>
+                        <a class="nav-link" href="{% url 'employee_list' %}">Employees</a>
                     </li>
+                    {% if not user.userprofile.master_account %}
+                        <li class="nav-item border-start ms-2 ps-2">
+                            <a class="nav-link text-warning" href="{% url 'team_list' %}">
+                                <i class="bi bi-shield-lock me-1"></i>Team Access
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
             {% endif %}
 
@@ -39,8 +46,8 @@
                 {% if user.is_authenticated %}
                     <a href="{% url 'profile_settings' %}" class="text-white me-3 small text-decoration-none">
                         <i class="bi bi-gear-fill"></i> {{ user.username }}
-                        {% if user.userprofile.company_name %}
-                            ({{ user.userprofile.company_name }})
+                        {% if user.userprofile.effective_company_name %}
+                            ({{ user.userprofile.effective_company_name }})
                         {% endif %}
                     </a>
                     

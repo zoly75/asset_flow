@@ -1,0 +1,33 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Remove Team Member?</h4>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <p class="lead">
+                        Are you sure you want to remove <strong>{{ member.username }}</strong>?
+                    </p>
+                    <p class="text-muted">
+                        This user will no longer be able to log in to your company account.
+                        <br>
+                        (No assets will be deleted, only their access).
+                    </p>
+
+                    <form method="POST" class="mt-4">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-lg me-2">
+                            Yes, Remove User
+                        </button>
+                        <a href="{% url 'team_list' %}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

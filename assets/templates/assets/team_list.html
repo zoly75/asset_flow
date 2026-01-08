@@ -1,0 +1,61 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-people-fill me-2"></i>Team Management</h1>
+        <a href="{% url 'add_team_member' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus-fill me-2"></i>Add Team Member
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        These users can <strong>log in</strong> to your account and manage your assets. 
+        They will see exactly what you see, but cannot change company settings.
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Username</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in team_members %}
+                        <tr>
+                            <td class="ps-4 fw-bold">{{ member.username }}</td>
+                            <td>
+                                {% if member.first_name or member.last_name %}
+                                    {{ member.first_name }} {{ member.last_name }}
+                                {% else %}
+                                    <em class="text-muted">Not set</em>
+                                {% endif %}
+                            </td>
+                            <td>{{ member.email|default:"-" }}</td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'delete_team_member' member.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i> Remove
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                No team members yet. Invite someone to help you manage assets!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

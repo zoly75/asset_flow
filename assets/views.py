@@ -13,8 +13,27 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
-from .models import Asset, UserProfile, Employee
-from .forms import AssetForm, AssignAssetForm, AssetStatusForm, UserProfileForm, EmployeeForm, SignUpForm, UserUpdateForm
+from .models import Asset, UserProfile, Employee, User
+from .forms import AssetForm, AssignAssetForm, AssetStatusForm, UserProfileForm, EmployeeForm, SignUpForm, UserUpdateForm, TeamUserCreationForm
+
+def get_shared_owner(user):
+    """
+    Returns the effective owner of the data.
+    - If user is a Boss (master_account is None): returns user.
+    - If user is a Team Member (master_account is set): returns the Boss.
+    """
+    if hasattr(user, 'userprofile') and user.userprofile.master_account:
+        return user.userprofile.master_account
+    return user
+
+def is_boss(user):
+    """
+    Returns True if the user is the Account Owner (can manage billing/team).
+    Returns False if user is just a Team Member.
+    """
+    if hasattr(user, 'userprofile') and user.userprofile.master_account:
+        return False
+    return True
 
 @login_required
 def dashboard(request):
@@ -22,12 +41,14 @@ def dashboard(request):
     Lists assets with Search functionality.
     Only shows assets belonging to the logged-in user.
     """
-    # 1. Base Query: Fetch only the user's assets (SAAS Security)
-    assets = Asset.objects.filter(owner=request.user)
+    # 1. Determine who implies the ownership
+    owner = get_shared_owner(request.user)
+
+    # 2. Filter assets by the OWNER (not necessarily owner)
+    assets = Asset.objects.filter(owner=owner)
 
     asset_count = assets.count()
 
-    # 2. Search Logic
     query = request.GET.get('q') # Get the search term from URL (e.g., ?q=drill)
 
     if query:
@@ -48,7 +69,8 @@ def dashboard(request):
     context = {
         'assets': assets,
         'asset_count': asset_count,
-        'search_query': query # Pass back to template to keep the input filled
+        'search_query': query,
+        'is_boss': is_boss(request.user)
     }
     return render(request, 'assets/dashboard.html', context)
 
@@ -59,13 +81,25 @@ def profile_settings(request):
     1. u_form: User data (Email, Name)
     2. p_form: Profile data (Company, Phone)
     """
-    if request.method == 'POST':
-        u_form = UserUpdateForm(request.POST, instance=request.user)
-        p_form = UserProfileForm(request.POST, instance=request.user.userprofile)
+    user_is_boss = is_boss(request.user)
 
-        if u_form.is_valid() and p_form.is_valid():
+    if request.method == 'POST':
+        # 1. User Form (Available to everyone)
+        u_form = UserUpdateForm(request.POST, instance=request.user)
+        
+        # 2. Profile Form (Company Info - Only for Boss)
+        p_form = UserProfileForm(request.POST, instance=request.user.userprofile) if user_is_boss else None
+
+        # Validation Logic:
+        # If Boss: Both forms must be valid.
+        # If Team Member: Only u_form needs to be valid.
+        if u_form.is_valid() and (not user_is_boss or p_form.is_valid()):
             u_form.save()
-            p_form.save()
+            
+            # Only save company details if user is allowed
+            if user_is_boss and p_form:
+                p_form.save()            
+            
             messages.success(request, 'Your profile has been updated!') # <--- Feedback!
             return redirect('profile_settings')
     else:
@@ -74,7 +108,8 @@ def profile_settings(request):
 
     context = {
         'u_form': u_form,
-        'p_form': p_form
+        'p_form': p_form,
+        'is_boss': user_is_boss
     }
     return render(request, 'assets/profile_form.html', context)
 
@@ -97,19 +132,20 @@ def employee_list(request):
     Team Management Page.
     Displays the list of employees with SEARCH functionality.
     """
+    owner = get_shared_owner(request.user)
     # Handle "Add New Employee" form submission
     if request.method == 'POST':
         form = EmployeeForm(request.POST)
         if form.is_valid():
             employee = form.save(commit=False)
-            employee.owner = request.user # Link to the current company
+            employee.owner = owner # Link to the current company
             employee.save()
             return redirect('employee_list')
     else:
         form = EmployeeForm()
 
     # 1. Base Query: Fetch existing employees owned by the user
-    employees = Employee.objects.filter(owner=request.user).order_by('name')
+    employees = Employee.objects.filter(owner=owner).order_by('name')
 
     # 2. Search Logic (New)
     query = request.GET.get('q') # Get the search term from URL
@@ -123,13 +159,14 @@ def employee_list(request):
         )
 
     # 3. Calculate Stats
-    total_assigned = Asset.objects.filter(owner=request.user, status='ASSIGNED').count()
+    total_assigned = Asset.objects.filter(owner=owner, status='ASSIGNED').count()
 
     context = {
         'employees': employees,
         'form': form,
         'total_assigned': total_assigned,
-        'search_query': query # Optional: Pass back to keep input filled
+        'search_query': query,
+        'is_boss': is_boss(request.user)
     }
 
     return render(request, 'assets/employee_list.html', context)
@@ -140,7 +177,8 @@ def delete_employee(request, pk):
     Deletes a team member with confirmation page.
     Releases their assets back to storage (AVAILABLE).
     """
-    employee = get_object_or_404(Employee, pk=pk, owner=request.user)
+    owner = get_shared_owner(request.user)
+    employee = get_object_or_404(Employee, pk=pk, owner=owner)
 
     if request.method == 'POST':
         # 1. Find assets assigned to this employee
@@ -168,12 +206,15 @@ def delete_employee(request, pk):
 def add_asset(request):
     # --- START OF LIMIT CHECK ---
     # 1. Count current assets owned by the user
-    current_count = Asset.objects.filter(owner=request.user).count()
+    owner = get_shared_owner(request.user)
+
+    # Limit check on the OWNER's account
+    current_count = Asset.objects.filter(owner=owner).count()
     
     # 2. Get limits from UserProfile (handle cases where profile might be missing)
-    if hasattr(request.user, 'userprofile'):
-        limit = request.user.userprofile.max_assets
-        is_premium = request.user.userprofile.is_premium
+    if hasattr(owner, 'userprofile'):
+        limit = owner.userprofile.max_assets
+        is_premium = owner.userprofile.is_premium
     else:
         # Fallback defaults if something is wrong with the profile
         limit = 50 
@@ -187,16 +228,16 @@ def add_asset(request):
 
     if request.method == 'POST':
         # PASS USER HERE:
-        form = AssetForm(request.POST, user=request.user) 
+        form = AssetForm(request.POST, user=owner) 
         if form.is_valid():
             asset = form.save(commit=False)
-            asset.owner = request.user
+            asset.owner = owner
             
             asset.save()
             return redirect('dashboard')
     else:
         # PASS USER HERE TOO:
-        form = AssetForm(user=request.user)
+        form = AssetForm(user=owner)
     
     return render(request, 'assets/asset_form.html', {'form': form})
 
@@ -218,6 +259,8 @@ def generate_qr(request, uuid):
     Generates a QR code image on the fly.
     Returns: PNG image bytes.
     """
+    owner = get_shared_owner(request.user)
+    asset = get_object_or_404(Asset, uuid=uuid, owner=owner) # Security check
     # 1. Construct the full URL that the QR code should point to.
     # request.build_absolute_uri() turns '/asset/...' into 'https://domain.com/asset/...'
     # This is crucial so it works on any domain!
@@ -245,11 +288,12 @@ def generate_qr(request, uuid):
 
 @login_required
 def edit_asset(request, uuid):
-    asset = get_object_or_404(Asset, uuid=uuid, owner=request.user)
+    owner = get_shared_owner(request.user)
+    asset = get_object_or_404(Asset, uuid=uuid, owner=owner)
 
     is_premium = False
-    if hasattr(request.user, 'userprofile'):
-        is_premium = request.user.userprofile.is_premium
+    if hasattr(owner, 'userprofile'):
+        is_premium = owner.userprofile.is_premium
 
     if is_premium:
         history = asset.history.all().order_by('-date')
@@ -258,13 +302,15 @@ def edit_asset(request, uuid):
     
     if request.method == 'POST':
         # PASS USER HERE:
-        form = AssetForm(request.POST, instance=asset, user=request.user)
+        form = AssetForm(request.POST, instance=asset, user=owner)
         if form.is_valid():
+            asset = form.save(commit=False)
+            asset._current_user = request.user
             asset.save()
             return redirect('dashboard')
     else:
         # PASS USER HERE TOO:
-        form = AssetForm(instance=asset, user=request.user)
+        form = AssetForm(instance=asset, user=owner)
 
     context = {
         'form': form, 
@@ -280,7 +326,8 @@ def delete_asset(request, uuid):
     """
     Deletes an asset after confirmation.
     """
-    asset = get_object_or_404(Asset, uuid=uuid, owner=request.user)
+    owner = get_shared_owner(request.user)
+    asset = get_object_or_404(Asset, uuid=uuid, owner=owner)
 
     if request.method == 'POST':
         # 4. If the user clicked "Confirm Delete" button
@@ -295,19 +342,21 @@ def assign_asset(request, uuid):
     """
     Assigns an asset to an employee from the dropdown list.
     """
-    asset = get_object_or_404(Asset, uuid=uuid, owner=request.user)
+    owner = get_shared_owner(request.user)
+    asset = get_object_or_404(Asset, uuid=uuid, owner=owner)
 
     if request.method == 'POST':
-        # We must pass 'user=request.user' to the form for filtering!
-        form = AssignAssetForm(request.POST, instance=asset, user=request.user)
+        # We must pass 'user=owner' to the form for filtering!
+        form = AssignAssetForm(request.POST, instance=asset, user=owner)
         if form.is_valid():
             asset = form.save(commit=False)
             asset.status = Asset.STATUS_ASSIGNED
+            asset._current_user = request.user
             asset.save()
             return redirect('dashboard')
     else:
         # Pass user here too for the GET request
-        form = AssignAssetForm(instance=asset, user=request.user)
+        form = AssignAssetForm(instance=asset, user=owner)
 
     return render(request, 'assets/assign_form.html', {'form': form, 'asset': asset})
 
@@ -317,30 +366,35 @@ def return_asset(request, uuid):
     One-click action to return an asset to inventory.
     Changed to accept GET requests to avoid nested form issues in the dashboard.
     """
-    asset = get_object_or_404(Asset, uuid=uuid, owner=request.user)
+    owner = get_shared_owner(request.user)
+    asset = get_object_or_404(Asset, uuid=uuid, owner=owner)
     
     # We removed the "if request.method == 'POST':" check
     # so clicking a simple link works immediately.
     asset.status = Asset.STATUS_AVAILABLE
     asset.assigned_to = None # Clear the name
+    asset._current_user = request.user
     asset.save()
         
     return redirect('dashboard')
 
 @login_required
 def update_status(request, uuid):
-    asset = get_object_or_404(Asset, uuid=uuid, owner=request.user)
-    
+    owner = get_shared_owner(request.user)
+    asset = get_object_or_404(Asset, uuid=uuid, owner=owner)
+
     if request.method == 'POST':
         # We must pass the user to the form to filter the employee dropdown
-        form = AssetStatusForm(request.POST, instance=asset, user=request.user)
+        form = AssetStatusForm(request.POST, instance=asset, user=owner)
         if form.is_valid():
+            asset = form.save(commit=False)
+            asset._current_user = request.user
             asset.save()
             return redirect('dashboard')
     else:
         # Pass user in GET request as well to populate the dropdown
-        form = AssetStatusForm(instance=asset, user=request.user)
-        
+        form = AssetStatusForm(instance=asset, user=owner)
+
     return render(request, 'assets/status_form.html', {'form': form, 'asset': asset})
 
 @login_required
@@ -349,11 +403,12 @@ def edit_employee(request, pk):
     Loads the existing 'employee_list' template, 
     but pre-fills the form with the selected employee's data.
     """
+    owner = get_shared_owner(request.user)
     # 1. Get the employee we want to edit
-    employee_to_edit = get_object_or_404(Employee, pk=pk, owner=request.user)
-    
+    employee_to_edit = get_object_or_404(Employee, pk=pk, owner=owner)
+
     # 2. Get the full list (so the left side table doesn't disappear!)
-    employees = Employee.objects.filter(owner=request.user).order_by('name')
+    employees = Employee.objects.filter(owner=owner).order_by('name')
 
     if request.method == 'POST':
         # Create form with INSTANCE (this triggers Update instead of Create)
@@ -374,10 +429,74 @@ def edit_employee(request, pk):
     })
 
 @login_required
+def team_list(request):
+    """
+    Lists all users who can log in to this account.
+    Only accessible by the Boss.
+    """
+    if not is_boss(request.user):
+        return redirect('dashboard')
+    
+    # Get users who have THIS user as their master_account
+    team_members = User.objects.filter(userprofile__master_account=request.user)
+    
+    return render(request, 'assets/team_list.html', {'team_members': team_members})
+
+@login_required
+def add_team_member(request):
+    """
+    Creates a new LOGIN User linked to the current Boss.
+    RESTRICTED TO PREMIUM USERS ONLY.
+    """
+    if not is_boss(request.user):
+        return redirect('dashboard')
+    
+    # --- PREMIUM CHECK ---
+    # Using the new smart property 'effective_premium' to verify status.
+    if not request.user.userprofile.effective_premium:
+         # Ensure you have the 'premium_lock.html' template ready or redirect to pricing
+        return render(request, 'assets/premium_lock.html', {'feature_name': 'Team Access'})
+
+    if request.method == 'POST':
+        form = TeamUserCreationForm(request.POST)
+        if form.is_valid():
+            new_user = form.save()
+            
+            # LINK TO BOSS
+            new_user.userprofile.master_account = request.user
+            new_user.userprofile.save()
+            
+            messages.success(request, f"Team member {new_user.username} created!")
+            return redirect('team_list')
+    else:
+        form = TeamUserCreationForm()
+    
+    return render(request, 'assets/team_form.html', {'form': form})
+
+@login_required
+def delete_team_member(request, pk):
+    """
+    Removes a login user from the team.
+    """
+    if not is_boss(request.user):
+        return redirect('dashboard')
+        
+    user_to_remove = get_object_or_404(User, pk=pk, userprofile__master_account=request.user)
+    
+    if request.method == 'POST':
+        username = user_to_remove.username
+        user_to_remove.delete()
+        messages.success(request, f"User {username} removed.")
+        return redirect('team_list')
+        
+    return render(request, 'assets/delete_team_confirm.html', {'member': user_to_remove})
+
+@login_required
 def download_labels_pdf(request):
     """
     Generates an A4 PDF with QR labels for ALL assets.
     """
+    owner = get_shared_owner(request.user)
     # 1. Setup the PDF Buffer
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
@@ -385,7 +504,7 @@ def download_labels_pdf(request):
 
     # Company Name for footer
     try:
-        company_name = f"Property of {request.user.userprofile.company_name}"
+        company_name = f"Property of {owner.userprofile.company_name}"
     except:
         company_name = "Property of Asset Manager"
     
@@ -410,24 +529,24 @@ def download_labels_pdf(request):
     selected_ids = request.POST.getlist('asset_ids')
 
     is_premium = False
-    if hasattr(request.user, 'userprofile'):
-        is_premium = request.user.userprofile.is_premium
+    if hasattr(owner, 'userprofile'):
+        is_premium = owner.userprofile.is_premium
 
     if single_uuid:
         # Mode A: Single Asset
-        assets = Asset.objects.filter(owner=request.user, uuid=single_uuid)
+        assets = Asset.objects.filter(owner=owner, uuid=single_uuid)
     elif selected_ids:
         # Mode B: Bulk Selection
         if not is_premium and len(selected_ids) > 1:
             return render(request, 'assets/premium_lock.html')
 
-        assets = Asset.objects.filter(owner=request.user, uuid__in=selected_ids).order_by('name')
+        assets = Asset.objects.filter(owner=owner, uuid__in=selected_ids).order_by('name')
     else:
         # Mode C: Print ALL (Default fallback)
         if not is_premium:
             return render(request, 'assets/premium_lock.html')
 
-        assets = Asset.objects.filter(owner=request.user).order_by('name')
+        assets = Asset.objects.filter(owner=owner).order_by('name')
 
     if not assets.exists():
         # If no assets found, redirect back to dashboard
@@ -501,10 +620,10 @@ def download_labels_pdf(request):
 
         # --- GET PROFILE DATA ---
         try:
-            profile = request.user.userprofile
+            profile = owner.userprofile
             comp_name = profile.company_name
             phone = profile.phone_number
-            email = request.user.email
+            email = owner.email
         except:
             comp_name, phone, email = "", "", ""
 
