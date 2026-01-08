@@ -14,12 +14,12 @@
     <div class="row justify-content-center align-items-center">
         
         <div class="col-md-5 col-lg-4 mb-4">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-bottom-0 pt-4 pb-0 text-center">
                     <h4 class="fw-normal text-muted">Free Starter</h4>
                     <h2 class="fw-bold my-3">€0 <small class="text-muted fs-6">/ month</small></h2>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body p-4 d-flex flex-column">
                     <ul class="list-unstyled mb-4">
                         <li class="mb-3 d-flex align-items-center text-muted">
                             <i class="bi bi-check-circle-fill text-success me-2"></i> 
@@ -31,7 +31,7 @@
                         </li>
                         <li class="mb-3 d-flex align-items-center text-muted">
                             <i class="bi bi-check-circle-fill text-success me-2"></i> 
-                            Single User
+                            Team Management
                         </li>
                         <li class="mb-3 d-flex align-items-center text-secondary opacity-50 text-decoration-line-through">
                             <i class="bi bi-x-circle-fill me-2"></i> 
@@ -39,10 +39,10 @@
                         </li>
                         <li class="mb-3 d-flex align-items-center text-secondary opacity-50 text-decoration-line-through">
                             <i class="bi bi-x-circle-fill me-2"></i> 
-                            Priority Support
+                            Bulk QR Label Printing
                         </li>
                     </ul>
-                    <div class="d-grid">
+                    <div class="d-grid mt-auto">
                         <button class="btn btn-outline-secondary disabled">Current Plan</button>
                     </div>
                 </div>
@@ -50,7 +50,7 @@
         </div>
 
         <div class="col-md-6 col-lg-5 mb-4">
-            <div class="card border-0 shadow-lg position-relative" style="transform: scale(1.02); z-index: 10;">
+            <div class="card border-0 shadow-lg position-relative h-100" style="transform: scale(1.02); z-index: 10;">
                 
                 <div class="position-absolute top-0 start-50 translate-middle">
                     <span class="badge rounded-pill px-3 py-2 text-uppercase fw-bold" style="background-color: #ffd700; color: #000;">
@@ -61,10 +61,14 @@
                 <div class="card-header border-bottom-0 pt-5 pb-0 text-center text-white" 
                      style="background-color: #1F3061; border-radius: 5px 5px 0 0;">
                     <h4 class="fw-normal text-white-50">Pro Enterprise</h4>
-                    <h2 class="fw-bold my-3">€29 <small class="text-white-50 fs-6">/ month</small></h2>
+                    <h2 class="fw-bold my-2">
+                        <small class="text-white-50 text-decoration-line-through me-2 fs-5">€19</small>
+                        €9 <small class="text-white-50 fs-6">/ month</small>
+                    </h2>
+                    <span class="badge bg-danger mb-3">LIMITED TIME OFFER</span>
                 </div>
                 
-                <div class="card-body p-5">
+                <div class="card-body p-5 d-flex flex-column">
                     <ul class="list-unstyled mb-4">
                         <li class="mb-3 d-flex align-items-center fw-bold">
                             <i class="bi bi-check-circle-fill text-primary me-2"></i> 
@@ -92,20 +96,21 @@
                         </li>
                     </ul>
                     
-                    <div class="d-grid text-center">
-                        <a href="mailto:zoly75@gmail.com?subject=Upgrade%20Request:%20Pro%20Plan%20({{ user.username }})&body=Hi%20AssetFlow%20Team,%0D%0A%0D%0AI%20would%20like%20to%20upgrade%20my%20account%20to%20the%20Pro%20Enterprise%20Plan%20(%E2%82%AC29/mo).%0D%0A%0D%0A---%20My%20Account%20Details%20---%0D%0AUsername:%20{{ user.username }}%0D%0AEmail:%20{{ user.email }}%0D%0A%0D%0A---%20Billing%20Information%20(Please%20fill%20below)%20---%0D%0ACompany%20Name:%20____________________%0D%0AVAT%20Number:%20____________________%0D%0ABilling%20Address:%20____________________%0D%0A%0D%0APlease%20send%20me%20the%20invoice%20and%20next%20steps.%0D%0A%0D%0ABest%20regards," 
-                        class="btn btn-primary btn-lg fw-bold mb-2"
-                        style="background-color: #1F3061; border: none;">
+                    <div class="d-grid text-center mt-auto">
+                        <a href="mailto:zoly75@gmail.com?subject=Upgrade%20Request:%20Pro%20Plan%20Promo%20({{ user.username }})&body=Hi%20AssetFlow%20Team,%0D%0A%0D%0AI%20would%20like%20to%20upgrade%20my%20account%20to%20the%20Pro%20Enterprise%20Plan%20with%20the%20special%20offer%20(%E2%82%AC9/mo).%0D%0A%0D%0AUsername:%20{{ user.username }}%0D%0AEmail:%20{{ user.email }}%0D%0A%0D%0APlease%20send%20me%20the%20invoice." 
+                           class="btn btn-primary btn-lg fw-bold mb-3"
+                           style="background-color: #1F3061; border: none;">
                             Upgrade to Pro
                         </a>
                         
-                        <small class="text-muted">
-                            Or email us at: 
-                            <a href="mailto:zoly75@gmail.com" class="fw-bold text-dark text-decoration-none">
-                                zoly75@gmail.com
+                        <div class="pt-3 border-top">
+                            <p class="text-muted small mb-1">Don't like monthly fees?</p>
+                            <a href="mailto:zoly75@gmail.com?subject=Lifetime%20Deal%20Request%20({{ user.username }})&body=Hi,%20I%20am%20interested%20in%20the%20Lifetime%20Access%20for%2049%20EUR." 
+                               class="fw-bold text-dark text-decoration-none small">
+                                <span class="badge bg-dark me-1">LIFETIME</span> Get it forever for €49
                             </a>
-                        </small>
-                        
+                        </div>
+
                         <small class="text-muted mt-3" style="font-size: 0.75rem;">
                             No credit card required yet. We will send an invoice.
                         </small>
