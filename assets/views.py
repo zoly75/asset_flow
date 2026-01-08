@@ -680,3 +680,9 @@ class SignUpView(generic.CreateView):
 
 def pricing(request):
     return render(request, 'assets/pricing.html')
+
+def help_page(request):
+    """
+    Renders the Help & Documentation page.
+    """
+    return render(request, 'assets/help.html')

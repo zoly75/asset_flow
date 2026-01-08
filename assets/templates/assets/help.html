@@ -1,0 +1,138 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    
+    <div class="text-center mb-5">
+        <h1 class="fw-bold text-dark">How can we help you?</h1>
+        <p class="text-muted lead">
+            Documentation, guides, and tips to manage your inventory efficiently.
+        </p>
+    </div>
+
+    <div class="row mb-5 g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm text-center py-4">
+                <div class="card-body">
+                    <div class="display-4 text-primary mb-3"><i class="bi bi-people"></i></div>
+                    <h5 class="card-title fw-bold">1. Add Employees</h5>
+                    <p class="card-text text-muted small">
+                        List the people who will physically hold the assets (e.g., John Doe).
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm text-center py-4">
+                <div class="card-body">
+                    <div class="display-4 text-primary mb-3"><i class="bi bi-box-seam"></i></div>
+                    <h5 class="card-title fw-bold">2. Create Assets</h5>
+                    <p class="card-text text-muted small">
+                        Add laptops, tools, or vehicles to the system and assign them to employees.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm text-center py-4">
+                <div class="card-body">
+                    <div class="display-4 text-primary mb-3"><i class="bi bi-qr-code-scan"></i></div>
+                    <h5 class="card-title fw-bold">3. Print Labels</h5>
+                    <p class="card-text text-muted small">
+                        Stick QR codes on items. Scan them anytime to update status or return assets.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h3 class="fw-bold mb-4"><i class="bi bi-journal-text me-2"></i>Documentation</h3>
+            
+            <div class="accordion shadow-sm" id="helpAccordion">
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                            <strong><i class="bi bi-info-circle me-2"></i>Key Concept: Employees vs. Team Access</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#helpAccordion">
+                        <div class="accordion-body text-secondary">
+                            <p>It is important to understand the difference between these two lists:</p>
+                            <ul>
+                                <li><strong>Employees:</strong> These are the people who <em>possess</em> the equipment. They CANNOT log in to the software. They are just names in the database (e.g., "John Smith from Sales").</li>
+                                <li><strong>Team Access (Users):</strong> These are your colleagues (Admins, Warehouse Managers) who CAN log in to AssetFlow to manage the inventory. They have a username and password.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                            <strong><i class="bi bi-laptop me-2"></i>Adding and Assigning Assets</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                        <div class="accordion-body text-secondary">
+                            To add an asset, click the <strong>+ Add New</strong> button on the Dashboard. You can fill in the Name, Serial Number, and Description.
+                            <br><br>
+                            You can assign the asset immediately or later. If you assign it to an Employee, the status automatically changes to <em>Assigned / In Use</em>. If you return it, it becomes <em>Available</em>.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                            <strong><i class="bi bi-qr-code me-2"></i>Using QR Codes</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                        <div class="accordion-body text-secondary">
+                            Every asset gets a unique, secure QR code. You can:
+                            <ul>
+                                <li><strong>Scan it with your phone:</strong> It will open the asset's public page.</li>
+                                <li><strong>Scan it while logged in:</strong> You can quickly update the status, re-assign it, or edit details.</li>
+                                <li><strong>Print Labels:</strong> Use the "Labels" button on the dashboard to generate a PDF sheet of QR codes for printing.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                            <strong><i class="bi bi-shield-lock me-2"></i>Permissions & Roles</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                        <div class="accordion-body text-secondary">
+                            Only the <strong>Account Owner (Boss)</strong> can:
+                            <ul>
+                                <li>Manage Company Settings (Name, Phone).</li>
+                                <li>Add or Remove Team Members (Login users).</li>
+                                <li>Manage Billing & Subscription.</li>
+                            </ul>
+                            Team Members can manage assets and employees but cannot change company-wide settings.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <p class="text-muted">Still have questions?</p>
+        
+        <a href="mailto:support@zolylabs.com?subject=AssetFlow Support Request&body=Hi Support Team,%0D%0A%0D%0A[Please describe your issue here]%0D%0A%0D%0A---%0D%0AMy Username: {{ user.username }}" 
+           class="btn btn-outline-dark">
+            <i class="bi bi-envelope me-2"></i>Contact Support
+        </a>
+    </div>
+
+</div>
+{% endblock %}

@@ -29,4 +29,5 @@ urlpatterns = [
     path('team/', views.team_list, name='team_list'),
     path('team/add/', views.add_team_member, name='add_team_member'),
     path('team/delete/<int:pk>/', views.delete_team_member, name='delete_team_member'),
+    path('help/', views.help_page, name='help'),
 ]
