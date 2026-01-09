@@ -136,6 +136,10 @@ LOGOUT_REDIRECT_URL = 'login'
 # This prevents Django from redirecting unauthenticated users to '/admin/'.
 LOGIN_URL = 'login'
 
-# --- EMAIL SETTINGS (Development) ---
-# Instead of sending real emails, print them to the console/terminal.
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp-relay.brevo.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'AssetFlow Support <support@zolylabs.com>')
