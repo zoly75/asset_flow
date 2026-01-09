@@ -686,3 +686,9 @@ def help_page(request):
     Renders the Help & Documentation page.
     """
     return render(request, 'assets/help.html')
+
+def terms_of_service(request):
+    return render(request, 'assets/terms.html')
+
+def privacy_policy(request):
+    return render(request, 'assets/privacy.html')

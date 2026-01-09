@@ -1,23 +1,52 @@
 {% extends 'assets/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-header bg-success text-white text-center">
-                <h4 class="mb-0">Create Account</h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% include 'includes/form_loop.html' %}
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success btn-lg">Sign Up</button>
+<div class="container py-5">
+    <div class="row justify-content-center align-items-center">
+        <div class="col-xl-10 col-lg-12">
+            <div class="card border-0 shadow-lg overflow-hidden" style="border-radius: 1rem;">
+                <div class="row g-0">
+                    
+                    <div class="col-md-5 d-none d-md-block bg-primary text-white p-5 d-flex flex-column justify-content-center">
+                        <div class="mb-4">
+                            <i class="bi bi-box-seam display-4"></i>
+                        </div>
+                        <h2 class="fw-bold mb-3">Welcome to AssetFlow</h2>
+                        <p class="lead mb-4">
+                            Start managing your company inventory efficiently today.
+                        </p>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="bi bi-check-circle-fill me-2 opacity-75"></i>Track laptops & tools</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill me-2 opacity-75"></i>Generate QR codes</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill me-2 opacity-75"></i>Manage team access</li>
+                        </ul>
                     </div>
-                </form>
-            </div>
-            <div class="card-footer text-center text-muted small">
-                Already have an account? <a href="{% url 'login' %}">Log in here</a>.
+
+                    <div class="col-md-7 p-5 bg-white">
+                        <div class="text-center mb-4">
+                            <h3 class="fw-bold text-dark">Create Account</h3>
+                            <p class="text-muted small">Enter your details to get started</p>
+                        </div>
+
+                        <form method="post">
+                            {% include 'includes/form_loop.html' %}
+
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                                    Sign Up <i class="bi bi-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="text-center mt-4">
+                            <p class="small text-muted mb-0">
+                                Already have an account? 
+                                <a href="{% url 'login' %}" class="fw-bold text-primary text-decoration-none">Log in here</a>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>

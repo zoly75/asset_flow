@@ -2,9 +2,12 @@
 
 {% for field in form %}
     <div class="mb-3">
-        <label class="form-label fw-bold" for="{{ field.id_for_label }}">
-            {{ field.label }}
-        </label>
+        
+        {% if field.field.widget.input_type != "checkbox" %}
+            <label class="form-label fw-bold" for="{{ field.id_for_label }}">
+                {{ field.label }}
+            </label>
+        {% endif %}
 
         {% if field.field.widget.input_type == "select" %}
             <select name="{{ field.name }}" class="form-select" id="{{ field.id_for_label }}">
@@ -16,6 +19,14 @@
         {% elif field.field.widget.input_type == "checkbox" %}
             <div class="form-check">
                 <input type="checkbox" name="{{ field.name }}" class="form-check-input" id="{{ field.id_for_label }}" {% if field.value %}checked{% endif %}>
+                
+                <label class="form-check-label small" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+                
+                {% if field.help_text %}
+                    <div class="form-text text-muted">{{ field.help_text }}</div>
+                {% endif %}
             </div>
 
         {% elif field.field.widget.input_type == "textarea" %}
@@ -35,7 +46,8 @@
                 {{ field.errors.0 }}
             </div>
         {% endif %}
-        {% if field.help_text %}
+
+        {% if field.help_text and field.field.widget.input_type != "checkbox" %}
             <div class="form-text text-muted">{{ field.help_text }}</div>
         {% endif %}
     </div>

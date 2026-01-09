@@ -30,4 +30,6 @@ urlpatterns = [
     path('team/add/', views.add_team_member, name='add_team_member'),
     path('team/delete/<int:pk>/', views.delete_team_member, name='delete_team_member'),
     path('help/', views.help_page, name='help'),
+    path('terms/', views.terms_of_service, name='terms'),
+    path('privacy/', views.privacy_policy, name='privacy'),
 ]

@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.utils.safestring import mark_safe
 from .models import Asset, UserProfile, Employee
 
 class BaseAssetForm(forms.ModelForm):
@@ -104,7 +105,19 @@ class SignUpForm(UserCreationForm):
     Custom registration form that includes EMAIL.
     """
     email = forms.EmailField(required=True, help_text="Required. Used for password reset.")
+    first_name = forms.CharField(max_length=30, required=False)
+    last_name = forms.CharField(max_length=30, required=False)
 
+    # Checkbox that MUST be checked to proceed.
+    # We use mark_safe to allow HTML links inside the label.
+    terms_confirmed = forms.BooleanField(
+        required=True,
+        label=mark_safe(
+            'I have read and agree to the '
+            '<a href="/terms/" target="_blank">Terms of Service</a> and '
+            '<a href="/privacy/" target="_blank">Privacy Policy</a>.'
+        )
+    )
     class Meta:
         model = User
         # Itt határozzuk meg, mi jelenjen meg.
