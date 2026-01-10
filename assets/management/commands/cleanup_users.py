@@ -7,16 +7,15 @@ class Command(BaseCommand):
     help = 'Deletes inactive users who registered more than 48 hours ago.'
 
     def handle(self, *args, **options):
-        # Calculate the threshold (current time - 48 hours)
         threshold = timezone.now() - timedelta(hours=48)
-
-        # Find users who are inactive AND joined before the threshold
         old_inactive_users = User.objects.filter(is_active=False, date_joined__lt=threshold)
-        
         count = old_inactive_users.count()
         
+        # timestamp formázása (hogy szép legyen a logban)
+        now_str = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+
         if count > 0:
             old_inactive_users.delete()
-            self.stdout.write(self.style.SUCCESS(f'Successfully deleted {count} expired inactive users.'))
+            self.stdout.write(self.style.SUCCESS(f'[{now_str}] Successfully deleted {count} expired inactive users.'))
         else:
-            self.stdout.write(self.style.SUCCESS('No expired inactive users found.'))
+            self.stdout.write(self.style.SUCCESS(f'[{now_str}] No expired inactive users found.'))
