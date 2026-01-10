@@ -124,6 +124,22 @@ class SignUpForm(UserCreationForm):
         # A jelszót a UserCreationForm automatikusan hozzáadja.
         fields = ('username', 'email', 'first_name', 'last_name')
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        
+        # 1. Check if an ACTIVE user already exists with this email
+        if User.objects.filter(email=email, is_active=True).exists():
+            raise forms.ValidationError("This email address is already in use by an active account.")
+        
+        # 2. Check for INACTIVE users (stalled registrations)
+        # If someone registered but never activated, we delete the old "ghost" user
+        # so they can try registering again immediately.
+        inactive_users = User.objects.filter(email=email, is_active=False)
+        if inactive_users.exists():
+            inactive_users.delete()
+            
+        return email
+
 class TeamUserCreationForm(UserCreationForm):
     """
     Form to create a sub-user (Team Member).
