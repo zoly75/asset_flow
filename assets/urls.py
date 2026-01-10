@@ -32,4 +32,5 @@ urlpatterns = [
     path('help/', views.help_page, name='help'),
     path('terms/', views.terms_of_service, name='terms'),
     path('privacy/', views.privacy_policy, name='privacy'),
+    path('activate/<uidb64>/<token>/', views.activate, name='activate'),
 ]

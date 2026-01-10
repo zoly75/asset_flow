@@ -7,6 +7,13 @@ from django.http import HttpResponse
 from django.db.models import Q
 from django.contrib.auth.views import PasswordChangeView
 from django.contrib import messages
+from django.contrib.sites.shortcuts import get_current_site
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.template.loader import render_to_string
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.contrib.auth import login
 import qrcode
 from io import BytesIO
 from reportlab.pdfgen import canvas
@@ -670,14 +677,93 @@ def download_labels_pdf(request):
 
 class SignUpView(generic.CreateView):
     """
-    View for public user registration.
-    Uses Django's built-in UserCreationForm.
-    Redirects to login page upon success.
+    Handles user registration with Email Confirmation and Admin Notification.
     """
     form_class = SignUpForm
-    success_url = reverse_lazy('login')
     template_name = 'registration/signup.html'
+    success_url = reverse_lazy('login') # Safety fallback
 
+    def form_valid(self, form):
+        # 1. Save the user but keep them INACTIVE until email confirmation
+        user = form.save(commit=False)
+        user.is_active = False 
+        user.save()
+
+        # 2. Generate token for the activation link
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # Get current domain (works on both localhost and production)
+        current_site = get_current_site(self.request)
+        domain = current_site.domain
+        
+        # Construct the activation link
+        activation_link = f"https://{domain}/activate/{uid}/{token}/"
+
+        # --- A) EMAIL TO USER (Activation) ---
+        subject_user = 'Activate your AssetFlow account!'
+        message_user = f"""Hi {user.username}!
+        
+Thank you for registering. To start using your account, please confirm your email address by clicking the link below:
+
+{activation_link}
+
+Best regards,
+AssetFlow Support Team
+"""
+        send_mail(
+            subject_user,
+            message_user,
+            'AssetFlow Support <support@zolylabs.com>',
+            [user.email],
+            fail_silently=False,
+        )
+
+        # --- B) EMAIL TO ADMIN (Notification) ---
+        subject_admin = f'New user registration: {user.username}'
+        message_admin = f"""Hi Zoly!
+
+A new user has just registered on the site.
+
+Name: {user.username}
+Email: {user.email}
+Time: Just now
+
+The user status is currently INACTIVE (waiting for email confirmation).
+"""
+        send_mail(
+            subject_admin,
+            message_admin,
+            'AssetFlow System <support@zolylabs.com>',
+            ['support@zolylabs.com'], # Sends notification to yourself
+            fail_silently=True,
+        )
+
+        # 3. Feedback and Redirect
+        messages.success(self.request, f"Account created! We sent an activation link to {user.email}. Please click it to log in.")
+        return redirect('login')
+
+def activate(request, uidb64, token):
+    """
+    Handles the activation link clicked by the user.
+    """
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        # SUCCESSFUL ACTIVATION
+        user.is_active = True
+        user.save()
+        messages.success(request, 'Thank you! Your email has been confirmed. You can now log in.')
+        return redirect('login')
+    else:
+        # INVALID OR EXPIRED LINK
+        messages.warning(request, 'The activation link is invalid or has already been used.')
+        return redirect('login')
+        
 def pricing(request):
     return render(request, 'assets/pricing.html')
 
