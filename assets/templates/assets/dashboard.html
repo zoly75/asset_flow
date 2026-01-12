@@ -87,7 +87,7 @@
 <form method="post" action="{% url 'download_labels' %}" id="bulk-print-form" target="_blank">
     {% csrf_token %}
 
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm border-0 d-none d-md-block">
         <div class="card-body p-0 table-responsive">
             <table class="table table-hover table-striped mb-0 align-middle">
                 <thead class="table-dark">
@@ -114,7 +114,6 @@
                             <a href="{% url 'edit_asset' asset.uuid %}" class="text-decoration-none text-primary">
                                 {{ asset.name }}
                             </a>
-                            
                             {% if asset.description %}
                                 <div class="small text-muted fw-normal text-truncate" style="max-width: 200px;">
                                     {{ asset.description }}
@@ -125,18 +124,18 @@
                             {{ asset.serial_number|default:"-" }}
                         </td>
                         <td>
+                            {% if asset.status == 'AVAILABLE' %}
+                                <span class="badge bg-success bg-opacity-75">Available</span>
+                            {% elif asset.status == 'ASSIGNED' %}
+                                <span class="badge bg-primary">In Use</span>
+                            {% elif asset.status == 'MAINTENANCE' %}
+                                <span class="badge bg-warning text-dark">Fixing</span>
+                            {% elif asset.status == 'BROKEN' %}
+                                <span class="badge bg-secondary">Decommissioned</span>
+                            {% else %}
+                                <span class="badge bg-danger">Lost</span>
+                            {% endif %}
                             <a href="{% url 'update_status' asset.uuid %}" class="text-decoration-none">
-                                {% if asset.status == 'AVAILABLE' %}
-                                    <span class="badge bg-success bg-opacity-75">Available</span>
-                                {% elif asset.status == 'ASSIGNED' %}
-                                    <span class="badge bg-primary">In Use</span>
-                                {% elif asset.status == 'MAINTENANCE' %}
-                                    <span class="badge bg-warning text-dark">Fixing</span>
-                                {% elif asset.status == 'BROKEN' %}
-                                    <span class="badge bg-secondary">Decommissioned</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Lost</span>
-                                {% endif %}
                                 <i class="bi bi-pencil-square text-muted ms-1 small opacity-50"></i>
                             </a>
                         </td>
@@ -187,6 +186,100 @@
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <div class="d-md-none">
+        {% for asset in assets %}
+        <div class="card mb-3 shadow-sm border">
+            <div class="card-body">
+                
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="form-check me-2">
+                        <input class="form-check-input asset-checkbox" type="checkbox" name="asset_ids" value="{{ asset.uuid }}">
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="card-title fw-bold mb-0 text-break">
+                            <a href="{% url 'edit_asset' asset.uuid %}" class="text-decoration-none text-dark">
+                                {{ asset.name }}
+                            </a>
+                        </h5>
+                        {% if asset.description %}
+                            <div class="text-muted small text-truncate" style="max-width: 200px;">
+                                {{ asset.description }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                         {% if asset.status == 'AVAILABLE' %}
+                            <span class="badge bg-success bg-opacity-75">Free</span>
+                        {% elif asset.status == 'ASSIGNED' %}
+                            <span class="badge bg-primary">Used</span>
+                        {% elif asset.status == 'MAINTENANCE' %}
+                            <span class="badge bg-warning text-dark">Fix</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Other</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3 small bg-light p-2 rounded mx-0">
+                    <div class="col-6">
+                        <span class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">Serial</span>
+                        <span class="font-monospace fw-bold">{{ asset.serial_number|default:"-" }}</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">Assigned To</span>
+                        {% if asset.assigned_to %}
+                            <span class="fw-bold">{{ asset.assigned_to }}</span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                         {% if asset.status == 'AVAILABLE' %}
+                            <a href="{% url 'assign_asset' asset.uuid %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-person-plus"></i> Assign
+                            </a>
+                        {% elif asset.status == 'ASSIGNED' %}
+                            <a href="{% url 'return_asset' asset.uuid %}" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-arrow-return-left"></i> Return
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    <div class="btn-group">
+                        <a href="{% url 'update_status' asset.uuid %}" class="btn btn-sm btn-light border text-muted">
+                            <i class="bi bi-pencil-square"></i>
+                        </a>
+                        <a href="{% url 'edit_asset' asset.uuid %}" class="btn btn-sm btn-light border text-warning">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                         <div class="btn-group dropup">
+                            <button type="button" class="btn btn-sm btn-light border text-muted dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="visually-hidden">Toggle Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'public_asset' asset.uuid %}" target="_blank"><i class="bi bi-eye me-2"></i>Public View</a></li>
+                                <li><a class="dropdown-item" href="{% url 'download_labels' %}?uuid={{ asset.uuid }}" target="_blank"><i class="bi bi-printer me-2"></i>Print Label</a></li>
+                                <li><a class="dropdown-item" href="{% url 'generate_qr' asset.uuid %}" target="_blank"><i class="bi bi-qr-code me-2"></i>Print QR</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'delete_asset' asset.uuid %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-box-seam display-1 text-light d-block mb-3"></i>
+            No assets found.
+        </div>
+        {% endfor %}
     </div>
 </form>
 
