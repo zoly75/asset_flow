@@ -1,0 +1,30 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-envelope-plus me-2"></i>Invite Team Member</h4>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">
+                Enter the email address of your employee. They will receive a link to set their own password.
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label fw-bold">Employee Email</label>
+                    <input type="email" name="email" class="form-control" id="email" placeholder="john@example.com" required>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">Send Invitation</button>
+                    <a href="{% url 'team_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

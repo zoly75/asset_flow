@@ -1,0 +1,31 @@
+{% extends 'assets/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold text-primary">Join the Team</h2>
+                    <p class="text-muted">
+                        You've been invited by <strong>{{ invitation.inviter.userprofile.company_name|default:invitation.inviter.username }}</strong>
+                    </p>
+                </div>
+
+                <div class="alert alert-info small">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Your email: <strong>{{ invitation.email }}</strong>
+                </div>
+
+                <form method="post">
+                    {% include 'includes/form_loop.html' %}
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

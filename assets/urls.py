@@ -27,10 +27,12 @@ urlpatterns = [
     path('signup/', SignUpView.as_view(), name='signup'),
     path('pricing/', views.pricing, name='pricing'),
     path('team/', views.team_list, name='team_list'),
-    path('team/add/', views.add_team_member, name='add_team_member'),
     path('team/delete/<int:pk>/', views.delete_team_member, name='delete_team_member'),
     path('help/', views.help_page, name='help'),
     path('terms/', views.terms_of_service, name='terms'),
     path('privacy/', views.privacy_policy, name='privacy'),
     path('activate/<uidb64>/<token>/', views.activate, name='activate'),
+    path('team/invite/', views.invite_team_member, name='invite_team_member'),
+    path('accept-invite/<str:token>/', views.accept_invitation, name='accept_invitation'),
+    path('confirm-email/<uuid:token>/', views.confirm_email_change, name='confirm_email_change'),
 ]

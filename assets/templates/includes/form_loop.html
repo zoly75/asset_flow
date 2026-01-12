@@ -38,7 +38,9 @@
                    class="form-control" 
                    id="{{ field.id_for_label }}"
                    value="{{ field.value|default_if_none:'' }}"
-                   {% if field.field.required %}required{% endif %}>
+                   {% if field.field.required %}required{% endif %}
+                   {% if field.field.disabled %}disabled{% endif %} 
+                   {% if field.field.widget.attrs.autocomplete %}autocomplete="{{ field.field.widget.attrs.autocomplete }}"{% endif %}>
         {% endif %}
         
         {% if field.errors %}

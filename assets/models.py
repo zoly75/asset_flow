@@ -136,6 +136,9 @@ class UserProfile(models.Model):
         related_name='team_members'
     )
 
+    pending_email = models.EmailField(blank=True, null=True)
+    email_verification_token = models.UUIDField(blank=True, null=True)
+
     @property
     def effective_company_name(self):
         """
@@ -179,3 +182,26 @@ def save_user_profile(sender, instance, **kwargs):
         instance.userprofile.save()
     except UserProfile.DoesNotExist:
         UserProfile.objects.create(user=instance)
+
+class TeamInvitation(models.Model):
+    """
+    Stores pending invitations for new team members.
+    Created when a Boss invites an employee via email.
+    """
+    # The Boss who sent the invite
+    inviter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_invitations')
+    
+    # The email address being invited
+    email = models.EmailField()
+    
+    # Unique token for the invitation link (e.g., /accept-invite/a0eebc99...)
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    
+    # When was the invite sent? (Can be used for expiration logic later)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Status of the invitation
+    accepted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Invite to {self.email} from {self.inviter.username}"

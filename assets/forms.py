@@ -99,6 +99,16 @@ class UserUpdateForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
         }
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        
+        # Megnézzük, van-e már ilyen email a rendszerben, 
+        # DE kizárjuk a saját magunkét (exclude pk), hogy ne jelezzen hibát, ha nem változtatunk.
+        if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("This email address is already in use.")
+            
+        return email
 
 class SignUpForm(UserCreationForm):
     """
@@ -147,7 +157,14 @@ class TeamUserCreationForm(UserCreationForm):
     """
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email')
+        fields = ( 'first_name', 'last_name', 'email', 'username')
+
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'username'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'given-name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'family-name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'autocomplete': 'email'}),
+        }
     
     def __init__(self, *args, **kwargs):
         super(TeamUserCreationForm, self).__init__(*args, **kwargs)

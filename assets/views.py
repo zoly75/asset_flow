@@ -1,3 +1,4 @@
+import uuid
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
 from django.views import generic
@@ -20,7 +21,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
-from .models import Asset, UserProfile, Employee, User
+from .models import Asset, UserProfile, Employee, User, TeamInvitation
 from .forms import AssetForm, AssignAssetForm, AssetStatusForm, UserProfileForm, EmployeeForm, SignUpForm, UserUpdateForm, TeamUserCreationForm
 
 def get_shared_owner(user):
@@ -87,27 +88,73 @@ def profile_settings(request):
     Handles TWO forms:
     1. u_form: User data (Email, Name)
     2. p_form: Profile data (Company, Phone)
+    
+    SECURITY UPDATE: Email changes require confirmation!
     """
     user_is_boss = is_boss(request.user)
 
     if request.method == 'POST':
-        # 1. User Form (Available to everyone)
         u_form = UserUpdateForm(request.POST, instance=request.user)
-        
-        # 2. Profile Form (Company Info - Only for Boss)
+        # Profile form is only for Boss users
         p_form = UserProfileForm(request.POST, instance=request.user.userprofile) if user_is_boss else None
 
-        # Validation Logic:
-        # If Boss: Both forms must be valid.
-        # If Team Member: Only u_form needs to be valid.
+        # Validation: Boss needs both valid, Employee only needs u_form
         if u_form.is_valid() and (not user_is_boss or p_form.is_valid()):
-            u_form.save()
             
-            # Only save company details if user is allowed
+            # --- EMAIL CHANGE LOGIC START ---
+            # 1. Get the user object from form but DON'T save to DB yet
+            user = u_form.save(commit=False)
+            
+            # 2. Check if email has changed
+            # We fetch the current email directly from DB to be 100% sure what it was before
+            current_db_email = User.objects.get(pk=request.user.pk).email
+            new_email = u_form.cleaned_data.get('email')
+
+            if new_email != current_db_email:
+                # REVERT the email change on the user object immediately
+                # So the Name changes are saved, but Email stays the old one for now.
+                user.email = current_db_email 
+                
+                # 3. Save to PENDING storage in UserProfile
+                profile = user.userprofile
+                profile.pending_email = new_email
+                profile.email_verification_token = uuid.uuid4()
+                profile.save()
+                
+                # 4. Send Confirmation Email
+                current_site = get_current_site(request)
+                confirm_link = f"https://{current_site.domain}/confirm-email/{profile.email_verification_token}/"
+                
+                send_mail(
+                    subject='Confirm your new email address',
+                    message=f"""Hi {user.username}!
+
+You requested to change your email to {new_email}.
+Please click the link below to confirm this change:
+
+{confirm_link}
+
+If you did not request this, you can safely ignore this email.
+""",
+                    from_email='AssetFlow Security <support@zolylabs.com>',
+                    recipient_list=[new_email], # Send to the NEW address!
+                    fail_silently=False
+                )
+                
+                messages.info(request, f"Confirmation email sent to {new_email}. Please check your inbox.")
+            # --- EMAIL CHANGE LOGIC END ---
+
+            # 5. Save the rest of the changes (Name, etc.)
+            user.save()
+            
+            # Save company details if applicable
             if user_is_boss and p_form:
                 p_form.save()            
             
-            messages.success(request, 'Your profile has been updated!') # <--- Feedback!
+            # Only show "Updated" success message if we didn't just send a confirmation email
+            if new_email == current_db_email:
+                messages.success(request, 'Your profile has been updated!')
+
             return redirect('profile_settings')
     else:
         u_form = UserUpdateForm(instance=request.user)
@@ -450,37 +497,6 @@ def team_list(request):
     return render(request, 'assets/team_list.html', {'team_members': team_members})
 
 @login_required
-def add_team_member(request):
-    """
-    Creates a new LOGIN User linked to the current Boss.
-    RESTRICTED TO PREMIUM USERS ONLY.
-    """
-    if not is_boss(request.user):
-        return redirect('dashboard')
-    
-    # --- PREMIUM CHECK ---
-    # Using the new smart property 'effective_premium' to verify status.
-    if not request.user.userprofile.effective_premium:
-         # Ensure you have the 'premium_lock.html' template ready or redirect to pricing
-        return render(request, 'assets/premium_lock.html', {'feature_name': 'Team Access'})
-
-    if request.method == 'POST':
-        form = TeamUserCreationForm(request.POST)
-        if form.is_valid():
-            new_user = form.save()
-            
-            # LINK TO BOSS
-            new_user.userprofile.master_account = request.user
-            new_user.userprofile.save()
-            
-            messages.success(request, f"Team member {new_user.username} created!")
-            return redirect('team_list')
-    else:
-        form = TeamUserCreationForm()
-    
-    return render(request, 'assets/team_form.html', {'form': form})
-
-@login_required
 def delete_team_member(request, pk):
     """
     Removes a login user from the team.
@@ -778,3 +794,134 @@ def terms_of_service(request):
 
 def privacy_policy(request):
     return render(request, 'assets/privacy.html')
+
+@login_required
+def invite_team_member(request):
+    """
+    New Workflow Step 1: Boss sends an email invitation.
+    Instead of creating the user immediately, we create a pending invitation.
+    """
+    if not is_boss(request.user):
+        return redirect('dashboard')
+    
+    # Check Premium status (using the effective_premium logic)
+    if not request.user.userprofile.effective_premium:
+        return render(request, 'assets/premium_lock.html', {'feature_name': 'Team Access'})
+
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        
+        # 1. Validation: Check if user already exists in the system
+        if User.objects.filter(email=email).exists():
+            messages.warning(request, f"User with email {email} already exists!")
+            return redirect('invite_team_member')
+
+        # 2. Create the Invitation Record in DB
+        # We store who sent it (Boss) and to which email
+        invitation = TeamInvitation.objects.create(inviter=request.user, email=email)
+
+        # 3. Build the Activation Link
+        current_site = get_current_site(request)
+        domain = current_site.domain
+        # This URL pattern will be defined in the next step (urls.py)
+        invite_link = f"https://{domain}/accept-invite/{invitation.token}/"
+
+        # 4. Send the Email
+        subject = f"{request.user.userprofile.company_name or request.user.username} invited you to AssetFlow"
+        message = f"""Hi there!
+
+You have been invited to join the inventory management team at {request.user.userprofile.company_name or 'AssetFlow'}.
+
+Click the link below to set up your account and password:
+{invite_link}
+
+This link is valid for 7 days.
+
+Best regards,
+AssetFlow Team
+"""
+        send_mail(
+            subject,
+            message,
+            'AssetFlow System <support@zolylabs.com>',
+            [email],
+            fail_silently=False,
+        )
+
+        messages.success(request, f"Invitation sent successfully to {email}!")
+        return redirect('team_list')
+
+    return render(request, 'assets/invite_form.html')
+
+
+def accept_invitation(request, token):
+    """
+    New Workflow Step 2: User clicks the email link.
+    Validates token, asks for Username/Password, and creates the account.
+    NO login required to access this page.
+    """
+    # 1. Validate Token: Must exist and not be used yet
+    invitation = get_object_or_404(TeamInvitation, token=token, accepted=False)
+
+    if request.method == 'POST':
+        # We reuse the existing TeamUserCreationForm for password validation
+        form = TeamUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            
+            # FORCE email from invitation (security measure: they can't change the email)
+            user.email = invitation.email
+            user.save()
+
+            # 2. Link to Boss (The most important step!)
+            # The new user becomes a subordinate of the inviter
+            user.userprofile.master_account = invitation.inviter
+            user.userprofile.save()
+
+            # 3. Mark invitation as used so it can't be clicked again
+            invitation.accepted = True
+            invitation.save()
+
+            # 4. Log the user in immediately and go to dashboard
+            login(request, user)
+            
+            messages.success(request, "Welcome to the team! You can now manage assets.")
+            return redirect('dashboard')
+    else:
+        # Pre-fill username suggestion based on email (e.g. zoli from zoli@gmail.com)
+        username_suggestion = invitation.email.split('@')[0]
+        form = TeamUserCreationForm(initial={
+            'username': username_suggestion,
+            'email': invitation.email
+        })
+        form.fields['email'].disabled = True
+        form.fields['email'].widget.attrs['disabled'] = 'disabled'
+        form.fields['email'].widget.attrs['readonly'] = 'readonly'
+
+    return render(request, 'registration/accept_invite.html', {'form': form, 'invitation': invitation})
+
+def confirm_email_change(request, token):
+    """
+    Handles the link click when user confirms their new email.
+    """
+    # 1. Find the profile with this token
+    # We use .first() to avoid crashes if token is invalid
+    profile = UserProfile.objects.filter(email_verification_token=token).first()
+    
+    if not profile or not profile.pending_email:
+        messages.error(request, "Invalid or expired confirmation link.")
+        return redirect('profile_settings')
+    
+    # 2. Update the REAL User email
+    user = profile.user
+    user.email = profile.pending_email
+    user.save()
+    
+    # 3. Cleanup: Clear the pending data so the link cannot be used again
+    profile.pending_email = None
+    profile.email_verification_token = None
+    profile.save()
+    
+    messages.success(request, f"Success! Your email has been changed to {user.email}.")
+    
+    return redirect('profile_settings')
