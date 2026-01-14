@@ -13,3 +13,6 @@ venv/
 # Deployment szemetek
 assetflow.zip
 requirements.txt.bak
+
+# Ignore swap files
+*.swp
